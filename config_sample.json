@@ -1,5 +1,7 @@
 {
   "api_key": "Your Pinecone API Key",
+  "use_seperate_target_client": false,
+  "api_key_dest": "TargetApiKey",
   "source_index": "synthetic-embedding-demo-source",
   "target_index": "synthetic-embedding-demo-target",
   "target_cloud": "aws",
@@ -15,6 +17,7 @@
   "filter_to_use": "{\"$and\": [ {\"domain\": \"Business\" }, {\"migrated\": {\"$exists\": true}} ]} ",
   "run_validation_after_every_batch": false,
   "write_to_parquet": false,
+  "parquet_write_back_batch_size": 100,
   "namespace_from_metadata_field": false,
   "metadata_field_to_namespace_from": "category",
   "iterate_over_namespaces": true,

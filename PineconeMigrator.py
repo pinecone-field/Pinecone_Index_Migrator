@@ -23,6 +23,11 @@ with open(CONFIG_PATH, "r") as f:
     config = json.load(f)
 
 API_KEY = config["api_key"]
+
+#for migrating across indexes
+TARGET_API_KEY = config["api_key_dest"]
+USE_2ND_TARGET_CLIENT = config["use_seperate_target_client"]
+
 SOURCE_INDEX_NAME = config["source_index"]
 TARGET_INDEX_NAME = config["target_index"]
 
@@ -41,6 +46,7 @@ USE_FILTER = config.get("use_filter")
 FILTER_TO_USE = config.get("filter_to_use")
 CREATE_TARGET = config.get("create_target")
 PARQUET_WRITE_BATCH_SIZE = 10000  # or whatever size you want for Parquet chunks
+PARQUET_WRITE_BACK_BATCH_SIZE = config.get("parquet_write_back_batch_size")
 NAMESPACE_FROM_METADATA_FIELD = config.get("namespace_from_metadata_field")
 METADATA_FIELD_TO_NAMESPACE_FROM = config.get("metadata_field_to_namespace_from")
 ITERATE_OVER_NAMESPACES = config.get("iterate_over_namespaces")
@@ -54,6 +60,11 @@ logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(me
 # --- Pinecone Client ---
 pc = Pinecone(api_key=API_KEY)
 source_index = pc.Index(SOURCE_INDEX_NAME)
+
+if USE_2ND_TARGET_CLIENT:
+    pc_target = Pinecone(api_key=TARGET_API_KEY)
+else:
+    pc_target = pc
 
 # for using multiple processors
 MAX_WORKERS = min(32, (multiprocessing.cpu_count() or 1) * 2)
@@ -141,9 +152,9 @@ def write_vectors_to_parquet(vectors, output_dir, source_index, namespace):
     logging.info(f"Wrote {len(records)} vectors to {parquet_path}")
 
     # Update source index with metadata
-    for i in range(0, len(update_batch), 500):
+    for i in range(0, len(update_batch), PARQUET_WRITE_BACK_BATCH_SIZE):
         try:
-            source_index.upsert(vectors=update_batch[i:i + 500], namespace=namespace)
+            source_index.upsert(vectors=update_batch[i:i + PARQUET_WRITE_BACK_BATCH_SIZE], namespace=namespace)
             logging.info(f"Updated metadata for {len(update_batch[i:i + 500])} vectors")
         except Exception as e:
             logging.error(f"Metadata update failed: {e}")
@@ -587,7 +598,8 @@ if __name__ == "__main__":
     if VERIFY_ONLY:
         logging.info("Running in verification-only mode...")
 
-        target_index = pc.Index(TARGET_INDEX_NAME)
+        #updated to use seperate target index clinet
+        target_index = pc_target.Index(TARGET_INDEX_NAME)
         try:
             # limit must be between 1 and 100
             for batch in source_index.list(namespace=source_namespace, limit=100):
@@ -621,10 +633,11 @@ if __name__ == "__main__":
 
             #create a new index if the target index does not exist.
             if CREATE_TARGET:
-                ensure_target_index(pc=pc, target_index_name=TARGET_INDEX_NAME, dimensions=dimensions)
+                #updated to use target client
+                ensure_target_index(pc=pc_target, target_index_name=TARGET_INDEX_NAME, dimensions=dimensions)
 
             #this will throw an error if autocreate is not enabled. I'm OK with this.
-            target_index = pc.Index(TARGET_INDEX_NAME)
+            target_index = pc_target.Index(TARGET_INDEX_NAME)
 
             if vector_count == 0:
                 logging.info(f"No vectors found in source namespace '{source_namespace}'. Nothing to migrate.")
