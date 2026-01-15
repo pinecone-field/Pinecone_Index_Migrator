@@ -4,3 +4,6 @@ pandas
 pyarrow
 mpmath
 urllib3
+grpcio
+pinecone[grpc]
+pinecone[asyncio]

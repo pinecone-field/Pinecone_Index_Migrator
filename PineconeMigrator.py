@@ -8,7 +8,9 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import datetime
 from itertools import islice
 import pandas as pd
-from pinecone import Pinecone
+#from pinecone import Pinecone
+#upgrading to GRPC
+from pinecone.grpc import PineconeGRPC as Pinecone
 import multiprocessing
 import threading
 import unicodedata
@@ -354,7 +356,7 @@ def upsert_vectors_batch_namespace(target_index, vectors, source_namespace, targ
         item = (vid, v.values, v.metadata)
         size = batch_size(item)
         if current_size + size > MAX_PAYLOAD_BYTES:
-            flush(current_batch)
+            flush(current_batch, source_namespace, target_namespace)
         current_batch.append(item)
         current_size += size
 
