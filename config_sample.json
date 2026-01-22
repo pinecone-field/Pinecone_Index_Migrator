@@ -23,5 +23,9 @@
   "iterate_over_namespaces": true,
   "use_source_as_target_namespace": true,
   "delta_delay_between_runs": false,
-  "delta_delay_duration": 600
+  "delta_delay_duration": 600,
+  "prime_index_store": false,
+  "save_to_s3": false,
+  "bucket_name": "pinecone-s3-bucket-john-ward",
+  "s3_folder_name": "ccnews_export"
 }
