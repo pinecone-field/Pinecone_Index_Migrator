@@ -93,7 +93,8 @@ if PRIME_INDEX_STORE:
     exit(0)
 
 # for using multiple processors
-MAX_WORKERS = min(32, (multiprocessing.cpu_count() or 1) * 2)
+#MAX_WORKERS = min(32, (multiprocessing.cpu_count() or 1) * 2)
+MAX_WORKERS = (min(16, (multiprocessing.cpu_count() or 1))) * 2
 
 # handle keyboard input to early quit
 stop_requested = False
@@ -409,7 +410,6 @@ def migration_loop(source_index, batch_size_loop, dim, source_namespace, target_
     #all_ids = get_source_vector_ids(source_index, namespace=source_namespace)
     #logging.info("Preparing full migration (dbm-backed id list)")
 
-    MAX_WORKERS = (min(16, (multiprocessing.cpu_count() or 1))) * 2
     batch_size_loop = 2000  # or 500
     start = time.time()
 
